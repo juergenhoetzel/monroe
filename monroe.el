@@ -344,6 +344,13 @@ monroe-repl-buffer."
     str
     default))
 
+(defun monroe-locate-running-nrepl-host ()
+  "Return host of running nREPL server."
+  (when-let (dir (locate-dominating-file default-directory ".nrepl-port"))
+    (with-temp-buffer
+      (insert-file-contents (concat dir ".nrepl-port"))
+      (concat "localhost:" (buffer-string)))))
+
 (defun monroe-strip-protocol (host)
   "Check if protocol was given and strip it."
   (let ((host (replace-regexp-in-string "[ \t]" "" host)))
@@ -598,9 +605,10 @@ The following keys are available in `monroe-interaction-mode`:
   "Load monroe by setting up appropriate mode, asking user for
 connection endpoint."
   (interactive
-   (list
-    (read-string (format "Host (default '%s'): " monroe-default-host)
-                 nil nil monroe-default-host)))
+   (let ((host (or (monroe-locate-running-nrepl-host) monroe-default-host)))
+     (list
+      (read-string (format "Host (default '%s'): " host)
+                   nil nil host))))
   (unless (ignore-errors
             (with-current-buffer (get-buffer-create monroe-repl-buffer)
               (prog1
